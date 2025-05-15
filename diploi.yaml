@@ -1,0 +1,19 @@
+diploiVersion: v1.0
+type: component
+name: Odoo
+description: Odoo 18 ERP & CRM
+
+hosts:
+  - name: Odoo
+    identifier: app
+    urlFormat: '[label].[default-domain]'
+
+images:
+  - identifier: app
+    prebuildImage: ghcr.io/diploi/component-odoo:[tag]
+
+environmentVariables:
+  - identifier: INITIAL_ADMIN_PASSWORD
+    defaultValue: "[diploi-generate-password]"
+    type: secret
+

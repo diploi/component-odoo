@@ -1,0 +1,3 @@
+FROM odoo:18.0-20250428
+
+# Let's see what we get...

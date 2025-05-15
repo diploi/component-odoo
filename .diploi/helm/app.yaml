@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+{{- if eq .Values.stage "development"}}
+kind: StatefulSet
+{{- else }}
+kind: Deployment
+{{- end }}
+metadata:
+  name: app
+  labels:
+    app: app
+spec:
+  selector:
+    matchLabels:
+      app: app
+  {{- if eq .Values.stage "development"}}
+  serviceName: app
+  {{- else }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  {{- end }}
+  replicas: {{ ternary 1 0 .Values.enabled }}
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      terminationGracePeriodSeconds: 10
+      imagePullSecrets:
+        - name: diploi-pull-secret
+        #initContainers:
+        #- name: install-dependencies
+        #  image: ghcr.io/diploi/component-nextjs:main
+        #  imagePullPolicy: Always
+        #  command: ['npm', 'install']
+        #  workingDir: /app/{{ .Values.identifier }}
+        #  env:
+        #  - name: NODE_ENV
+        #    value: development
+        #  volumeMounts:
+        #    - name: app-mount
+        #      mountPath: /app
+      containers:
+        - name: app
+          image: {{ .Values.images.app }}
+          imagePullPolicy: Always
+          #workingDir: /app/{{ .Values.identifier }}
+          #command: ['sh', '-c', 'echo The app is running! && sleep 10000']
+          ports:
+            - containerPort: 8069
+          env:
+            {{- range .Values.env }}
+            {{- if contains "app" .contexts }}
+            - name: {{ .identifier }}
+              value: {{ .value | quote }}
+            {{- end }}
+            {{- end }}
+            {{- range .Values.parameterGroups }}
+            - name: {{ .identifier }}
+              value: {{ .value | quote }}
+            {{- end }}
+            - name: APP_PUBLIC_URL
+              value: {{ .Values.hosts.app }}
+            - name: STAGE
+              value: {{ .Values.stage }}
+            - name: HOST
+              value: {{ .Values.parameterGroupsMap.POSTGRES_HOST | quote }}
+            - name: PORT
+              value: {{ .Values.parameterGroupsMap.POSTGRES_PORT | quote }}
+            - name: USER
+              value: {{ .Values.parameterGroupsMap.POSTGRES_USER | quote }}
+            - name: PASSWORD
+              value: {{ .Values.parameterGroupsMap.POSTGRES_PASSWORD | quote }}
+          volumeMounts:
+            - name: data-mount
+              mountPath: /var/lib/odoo
+            {{- if hasKey .Values.storage "odoohome" }}
+            - name: home-mount
+              mountPath: /home/odoo
+            {{- end }}
+            {{- if hasKey .Values.storage "odooaddons" }}
+            - name: addons-mount
+              mountPath: /mnt/extra-addons
+            {{- end }}
+      volumes:
+        - name: data-mount
+          hostPath:
+            path: {{ .Values.storage.odoodata.hostPath }}
+        {{- if hasKey .Values.storage "odoohome" }}
+        - name: home-mount
+          hostPath:
+            path: {{ .Values.storage.odoohome.hostPath }}
+        {{- end }}
+        {{- if hasKey .Values.storage "odooaddons" }}
+        - name: addons-mount
+          hostPath:
+            path: {{ .Values.storage.odooaddons.hostPath }}
+        {{- end }}
+        - name: ssh-keys
+          secret:
+            secretName: ssh-keys
+        - name: diploi-git
+          secret:
+            secretName: diploi-git
+
+
+
