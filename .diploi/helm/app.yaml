@@ -76,34 +76,28 @@ spec:
           volumeMounts:
             - name: data-mount
               mountPath: /var/lib/odoo
-            {{- if hasKey .Values.storage "odoohome" }}
+            {{- if hasKey .Values.storage "home" }}
             - name: home-mount
               mountPath: /home/odoo
             {{- end }}
-            {{- if hasKey .Values.storage "odooaddons" }}
-            - name: addons-mount
+            {{- if hasKey .Values.storage "extra-addons" }}
+            - name: extra-addons-mount
               mountPath: /mnt/extra-addons
             {{- end }}
       volumes:
         - name: data-mount
           hostPath:
-            path: {{ .Values.storage.odoodata.hostPath }}
-        {{- if hasKey .Values.storage "odoohome" }}
+            path: {{ .Values.storage.data.hostPath }}
+        {{- if hasKey .Values.storage "home" }}
         - name: home-mount
           hostPath:
-            path: {{ .Values.storage.odoohome.hostPath }}
+            path: {{ .Values.storage.home.hostPath }}
         {{- end }}
-        {{- if hasKey .Values.storage "odooaddons" }}
-        - name: addons-mount
+        {{- if hasKey .Values.storage "extra-addons" }}
+        - name: extra-addons-mount
           hostPath:
-            path: {{ .Values.storage.odooaddons.hostPath }}
+            path: {{ .Values.storage.extra-addons.hostPath }}
         {{- end }}
-        - name: ssh-keys
-          secret:
-            secretName: ssh-keys
-        - name: diploi-git
-          secret:
-            secretName: diploi-git
 
 
 
