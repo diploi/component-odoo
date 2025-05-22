@@ -1,27 +1,16 @@
 apiVersion: apps/v1
-{{- if eq .Values.stage "development"}}
-kind: StatefulSet
-{{- else }}
 kind: Deployment
-{{- end }}
 metadata:
   name: app
   labels:
     app: app
 spec:
+  replicas: {{ ternary 1 0 .Values.enabled }}
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: app
-  {{- if eq .Values.stage "development"}}
-  serviceName: app
-  {{- else }}
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 25%
-      maxSurge: 25%
-  {{- end }}
-  replicas: {{ ternary 1 0 .Values.enabled }}
   template:
     metadata:
       labels:
