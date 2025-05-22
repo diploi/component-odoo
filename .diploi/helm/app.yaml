@@ -24,12 +24,12 @@ spec:
           image: postgres:13  # Ensure this matches your PostgreSQL version
           env:
             - name: PGPASSWORD
-              value: {{ .Values.envMap.POSTGRES_PASSWORD.value | quote }}
+              value: {{ .Values.env.POSTGRES_PASSWORD | quote }}
           command:
             - sh
             - -c
             - |
-              psql -h {{ .Values.envMap.POSTGRES_HOST.value | quote }} -U {{ .Values.envMap.POSTGRES_USER.value | quote }} -tc "SELECT 1 FROM pg_database WHERE datname = '{{ .Values.env.DB_DATABASE }}_umami'" | grep -q 1 || psql -h {{ .Values.env.DB_HOST }} -U {{ .Values.env.DB_USER }} -c "CREATE DATABASE {{ .Values.env.DB_DATABASE }}"
+              psql -h {{ .Values.env.POSTGRES_HOST | quote }} -U {{ .Values.env.POSTGRES_USER | quote }} -tc "SELECT 1 FROM pg_database WHERE datname = '{{ .Values.env.DB_DATABASE }}'" | grep -q 1 || psql -h {{ .Values.env.DB_HOST }} -U {{ .Values.env.DB_USER }} -c "CREATE DATABASE {{ .Values.env.DB_DATABASE }}"
   
       containers:
         - name: app
@@ -53,13 +53,13 @@ spec:
             - name: STAGE
               value: {{ .Values.stage }}
             - name: HOST
-              value: {{ .Values.envMap.POSTGRES_HOST.value | quote }}
+              value: {{ .Values.env.POSTGRES_HOST | quote }}
             - name: PORT
-              value: {{ .Values.envMap.POSTGRES_PORT.value | quote }}
+              value: {{ .Values.env.POSTGRES_PORT | quote }}
             - name: USER
-              value: {{ .Values.envMap.POSTGRES_USER.value | quote }}
+              value: {{ .Values.env.DB_USER | quote }}
             - name: PASSWORD
-              value: {{ .Values.envMap.POSTGRES_PASSWORD.value | quote }}
+              value: {{ .Values.env.DB_PASSWORD | quote }}
           volumeMounts:
             - name: data-mount
               mountPath: /var/lib/odoo
