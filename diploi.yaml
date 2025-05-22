@@ -38,7 +38,7 @@ parameterGroups:
         type: string
       - name: Password
         identifier: DB_PASSWORD
-        defaultValue: "[generate-random-password:12]"
+        defaultValue: "${generate-random-password:12}"
         type: secret
       - name: Database
         identifier: DB_DATABASE
@@ -49,6 +49,6 @@ parameterGroups:
 
 environmentVariables:
   - identifier: INITIAL_ADMIN_PASSWORD
-    defaultValue: "[generate-random-password:12]"
+    defaultValue: "${generate-random-password:12}"
     type: secret
 
