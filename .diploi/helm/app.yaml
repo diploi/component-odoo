@@ -52,10 +52,8 @@ spec:
             - containerPort: 8069
           env:
             {{- range .Values.env }}
-            {{- if contains "app" .contexts }}
             - name: {{ .identifier }}
               value: {{ .value | quote }}
-            {{- end }}
             {{- end }}
             {{- range .Values.parameterGroups }}
             - name: {{ .identifier }}
@@ -66,13 +64,13 @@ spec:
             - name: STAGE
               value: {{ .Values.stage }}
             - name: HOST
-              value: {{ .Values.parameterGroupsMap.POSTGRES_HOST | quote }}
+              value: {{ .Values.envMap.POSTGRES_HOST | quote }}
             - name: PORT
-              value: {{ .Values.parameterGroupsMap.POSTGRES_PORT | quote }}
+              value: {{ .Values.envMap.POSTGRES_PORT | quote }}
             - name: USER
-              value: {{ .Values.parameterGroupsMap.POSTGRES_USER | quote }}
+              value: {{ .Values.envMap.POSTGRES_USER | quote }}
             - name: PASSWORD
-              value: {{ .Values.parameterGroupsMap.POSTGRES_PASSWORD | quote }}
+              value: {{ .Values.envMap.POSTGRES_PASSWORD | quote }}
           volumeMounts:
             - name: data-mount
               mountPath: /var/lib/odoo
