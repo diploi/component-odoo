@@ -51,6 +51,9 @@ spec:
           #command: ['sh', '-c', 'echo The app is running! && sleep 10000']
           ports:
             - containerPort: 8069
+          args: 
+            - odoo
+            - --init=all
           env:
             {{- range .Values.env }}
             - name: {{ .identifier }}
