@@ -96,7 +96,7 @@ spec:
         {{- if hasKey .Values.storage "extra-addons" }}
         - name: extra-addons-mount
           hostPath:
-            path: {{ .Values.storage.extra-addons.hostPath }}
+            path: {{ .Values.storage.["extra-addons"].hostPath }}
         {{- end }}
 
 
