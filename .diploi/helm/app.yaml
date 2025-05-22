@@ -53,13 +53,13 @@ spec:
             - name: STAGE
               value: {{ .Values.stage }}
             - name: HOST
-              value: {{ .Values.envMap.POSTGRES_HOST | quote }}
+              value: {{ .Values.envMap.POSTGRES_HOST.value | quote }}
             - name: PORT
-              value: {{ .Values.envMap.POSTGRES_PORT | quote }}
+              value: {{ .Values.envMap.POSTGRES_PORT.value | quote }}
             - name: USER
-              value: {{ .Values.envMap.POSTGRES_USER | quote }}
+              value: {{ .Values.envMap.POSTGRES_USER.value | quote }}
             - name: PASSWORD
-              value: {{ .Values.envMap.POSTGRES_PASSWORD | quote }}
+              value: {{ .Values.envMap.POSTGRES_PASSWORD.value | quote }}
           volumeMounts:
             - name: data-mount
               mountPath: /var/lib/odoo
