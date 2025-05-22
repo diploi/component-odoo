@@ -32,7 +32,8 @@ parameterGroups:
     identifier: database
     description: Odoo postgres database
     parameters:
-      - identifier: DB_USER
+      - name: User
+        identifier: DB_USER
         defaultValue: odoo
         type: string
       - name: Password
