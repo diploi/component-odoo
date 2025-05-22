@@ -60,6 +60,8 @@ spec:
               value: {{ .Values.envMap.POSTGRES_USER.value | quote }}
             - name: PASSWORD
               value: {{ .Values.envMap.POSTGRES_PASSWORD.value | quote }}
+            - name: ODOO_ALLOW_POSTGRES_USER
+              value: "true"
           volumeMounts:
             - name: data-mount
               mountPath: /var/lib/odoo
