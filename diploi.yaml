@@ -27,6 +27,25 @@ storage:
     sizeMiB: 2048
 
 
+parameterGroups:
+  - name: Database
+    identifier: database
+    description: Odoo postgres database
+    parameters:
+      - identifier: DB_USER
+        defaultValue: odoo
+        type: string
+      - name: Password
+        identifier: DB_PASSWORD
+        defaultValue: odoo
+        type: secret
+      - name: Database
+        identifier: DB_DATABASE
+        defaultValue: odoo
+        type: string
+
+
+
 environmentVariables:
   - identifier: INITIAL_ADMIN_PASSWORD
     defaultValue: "[diploi-generate-password]"
