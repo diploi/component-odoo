@@ -7,6 +7,8 @@ Diploi component for running Odoo version 18
 
 ## Odoo
 
+NOTE! This documentation is obsolete... Coming up
+
 Based on Odoo version 18 docker with minor Diploi customizations.
 
 Login to Odoo with user `admin`. An initial password is generated for every project. To find password, open Diploi project and check project options.

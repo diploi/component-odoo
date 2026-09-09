@@ -6,7 +6,6 @@ description: Odoo 18 ERP & CRM
 hosts:
   - name: Odoo
     identifier: app
-    urlFormat: '[label].[default-domain]'
 
 images:
   - identifier: app
@@ -14,41 +13,20 @@ images:
 
 storage:
   - identifier: data
-    uid: 1000
-    gid: 1000
-    sizeMiB: 2048
   - identifier: home
-    uid: 1000
-    gid: 1000
-    sizeMiB: 2048
   - identifier: extra-addons
-    uid: 1000
-    gid: 1000
-    sizeMiB: 2048
-
-
-parameterGroups:
-  - name: Database
-    identifier: database
-    description: Odoo postgres database
-    parameters:
-      - name: User
-        identifier: DB_USER
-        defaultValue: odoo
-        type: string
-      - name: Password
-        identifier: DB_PASSWORD
-        defaultValue: "${generate-random-password:12}"
-        type: secret
-      - name: Database
-        identifier: DB_DATABASE
-        defaultValue: odoo
-        type: string
-
-
 
 environmentVariables:
   - identifier: INITIAL_ADMIN_PASSWORD
     defaultValue: "${generate-random-password:12}"
     type: secret
 
+dependencies:
+  - identifier: postgres
+    package: https://github.com/diploi/addon-postgres#v18.3-pgvector
+    env:
+      include:
+        - POSTGRES_HOST:HOST
+        - POSTGRES_PORT:PORT
+        - POSTGRES_USER:USER
+        - POSTGRES_PASSWORD:PASSWORD
