@@ -3,13 +3,16 @@ type: component
 name: Odoo
 description: Odoo 18 ERP & CRM
 
+supportsAdditionalHosts: { serviceName: 'app' }
+
 hosts:
   - name: Odoo
     identifier: app
+    port: 8069
 
 images:
   - identifier: app
-    prebuildImage: ghcr.io/diploi/component-odoo:[tag]
+    prebuildImage: public.ecr.aws/p8t2q7f4/diploi/component-odoo:[tag]
 
 storage:
   - identifier: data

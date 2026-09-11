@@ -5,12 +5,19 @@ metadata:
   labels:
     app: app
 spec:
-  replicas: {{ ternary 1 0 .Values.enabled }}
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
       app: app
+  strategy:
+  {{- if eq .Values.stage "development"}}
+    type: Recreate
+  {{- else }}
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  {{- end }}
+  replicas: {{ ternary 1 0 .Values.enabled }}
   template:
     metadata:
       labels:
@@ -51,9 +58,24 @@ spec:
           #command: ['sh', '-c', 'echo The app is running! && sleep 10000']
           ports:
             - containerPort: 8069
-          args: 
-            - odoo
-            - --init=all
+          {{- if eq .Values.stage "development" }}
+          workingDir: /app{{ .Values.folder }}
+          {{- with .Values.containerCommands.developmentStart }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+          {{ . | nindent 14 }}
+          {{- end }}
+          {{- else }}
+          {{- with .Values.containerCommands.productionStart }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+          {{ . | nindent 14 }}
+          {{- end }}
+          {{- end }}
           env:
             {{- range .Values.env }}
             - name: {{ .identifier }}
@@ -67,14 +89,6 @@ spec:
               value: {{ .Values.hosts.app }}
             - name: STAGE
               value: {{ .Values.stage }}
-            - name: HOST
-              value: {{ .Values.envMap.POSTGRES_HOST.value | quote }}
-            - name: PORT
-              value: {{ .Values.envMap.POSTGRES_PORT.value | quote }}
-            - name: USER
-              value: {{ .Values.envMap.DB_USER.value | quote }}
-            - name: PASSWORD
-              value: {{ .Values.envMap.DB_PASSWORD.value | quote }}
           volumeMounts:
             - name: data-mount
               mountPath: /var/lib/odoo
