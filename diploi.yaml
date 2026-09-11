@@ -28,6 +28,11 @@ environmentVariables:
     type: secret
   - identifier: DATABASE
     defaultValue: "odoo"
+  - identifier: USER
+    defaultValue: "odoo"
+  - identifier: PASSWORD
+    defaultValue: "${generate-random-password:24}"
+    type: secret
 
 dependencies:
   - identifier: postgres
@@ -36,5 +41,5 @@ dependencies:
       include:
         - POSTGRES_HOST:HOST
         - POSTGRES_PORT:PORT
-        - POSTGRES_USER:USER
-        - POSTGRES_PASSWORD:PASSWORD
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD

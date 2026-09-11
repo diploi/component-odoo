@@ -26,29 +26,72 @@ spec:
       terminationGracePeriodSeconds: 10
       imagePullSecrets:
         - name: diploi-pull-secret
-      initContainers: 
+      initContainers:
         - name: create-db
-          image: postgres:13  # Ensure this matches your PostgreSQL version
+          image: postgres:18
           env:
+            - name: PGHOST
+              value: {{ .Values.envMap.HOST.value | quote }}
+            - name: PGPORT
+              value: {{ .Values.envMap.PORT.value | quote }}
+            - name: PGUSER
+              value: {{ .Values.envMap.POSTGRES_USER.value | quote }}
             - name: PGPASSWORD
+              value: {{ .Values.envMap.POSTGRES_PASSWORD.value | quote }}
+            - name: ODOO_USER
+              value: {{ .Values.envMap.USER.value | quote }}
+            - name: ODOO_PASSWORD
               value: {{ .Values.envMap.PASSWORD.value | quote }}
-          # TODO: What if psql isn't ready?
+            - name: ODOO_DB
+              value: {{ .Values.envMap.DATABASE.value | quote }}
           command:
             - sh
             - -c
             - |
-              set -e
-              DB_EXISTS=$(psql -h {{ .Values.envMap.HOST.value | quote }} -U {{ .Values.envMap.USER.value | quote }} -tc "SELECT 1 FROM pg_database WHERE datname = '{{ .Values.envMap.DATABASE.value }}'" | xargs)
-              if [ "$DB_EXISTS" != "1" ]; then
-                psql -h {{ .Values.envMap.HOST.value }} -U {{ .Values.envMap.USER.value }} -c "CREATE DATABASE {{ .Values.envMap.DATABASE.value }}"
-              fi
+              set -eu
+              until pg_isready -d postgres >/dev/null 2>&1; do
+                echo "Waiting for PostgreSQL..."
+                sleep 2
+              done
 
-              USER_EXISTS=$(psql -h {{ .Values.envMap.HOST.value }} -U {{ .Values.envMap.USER.value }} -tc "SELECT 1 FROM pg_roles WHERE rolname='{{ .Values.envMap.USER.value }}'" | xargs)
-              if [ "$USER_EXISTS" != "1" ]; then
-                psql -h {{ .Values.envMap.HOST.value }} -U {{ .Values.envMap.USER.value }} -c "CREATE USER {{ .Values.envMap.USER.value }} WITH PASSWORD '{{ .Values.envMap.PASSWORD.value }}' CREATEDB"
-              fi
+              psql -d postgres -v ON_ERROR_STOP=1 \
+                -v odoo_user="$ODOO_USER" \
+                -v odoo_password="$ODOO_PASSWORD" \
+                -v odoo_db="$ODOO_DB" <<'SQL'
+              SELECT format(
+                'CREATE ROLE %I LOGIN CREATEDB NOSUPERUSER PASSWORD %L',
+                :'odoo_user',
+                :'odoo_password'
+              )
+              WHERE NOT EXISTS (
+                SELECT 1 FROM pg_roles WHERE rolname = :'odoo_user'
+              )
+              \gexec
 
-              psql -h {{ .Values.envMap.HOST.value }} -U {{ .Values.envMap.USER.value }} -c "GRANT ALL PRIVILEGES ON DATABASE {{ .Values.envMap.DATABASE.value }} TO {{ .Values.envMap.USER.value }}"
+              SELECT format(
+                'ALTER ROLE %I WITH LOGIN CREATEDB NOSUPERUSER PASSWORD %L',
+                :'odoo_user',
+                :'odoo_password'
+              )
+              \gexec
+
+              SELECT format(
+                'CREATE DATABASE %I OWNER %I',
+                :'odoo_db',
+                :'odoo_user'
+              )
+              WHERE NOT EXISTS (
+                SELECT 1 FROM pg_database WHERE datname = :'odoo_db'
+              )
+              \gexec
+
+              SELECT format(
+                'GRANT ALL PRIVILEGES ON DATABASE %I TO %I',
+                :'odoo_db',
+                :'odoo_user'
+              )
+              \gexec
+              SQL
   
       containers:
         - name: app
