@@ -26,6 +26,8 @@ environmentVariables:
   - identifier: INITIAL_ADMIN_PASSWORD
     defaultValue: "${generate-random-password:12}"
     type: secret
+  - identifier: DATABASE
+    defaultValue: "odoo"
 
 dependencies:
   - identifier: postgres
