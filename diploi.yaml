@@ -16,10 +16,16 @@ images:
 
 storage:
   - identifier: data
+    uid: 1000,
+    gid: 1000,
     sizeMiB: 2048
   - identifier: home
+    uid: 1000,
+    gid: 1000,
     sizeMiB: 2048
   - identifier: extra-addons
+    uid: 1000,
+    gid: 1000,
     sizeMiB: 2048
 
 environmentVariables:
