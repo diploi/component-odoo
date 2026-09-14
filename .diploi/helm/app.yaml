@@ -111,9 +111,9 @@ spec:
             - name: home-mount
               mountPath: /home/odoo
             {{- end }}
-            {{- if hasKey .Values.storage "extra-addons" }}
-            - name: extra-addons-mount
-              mountPath: /mnt/extra-addons
+            {{- if hasKey .Values.storage "code" }}
+            - mountPath: /mnt/extra-addons
+              name: extra-addons-mount
             {{- end }}
       volumes:
         - name: init-script
@@ -127,11 +127,12 @@ spec:
           hostPath:
             path: {{ .Values.storage.home.hostPath }}
         {{- end }}
-        {{- if hasKey .Values.storage "extra-addons" }}
+        {{- if hasKey .Values.storage "code" }}
         - name: extra-addons-mount
           hostPath:
-            path: {{ index (index .Values.storage "extra-addons") "hostPath" }}
+            path: "{{ .Values.storage.code.hostPath }}{{ .Values.folder }}"
+            type: DirectoryOrCreate
         {{- end }}
-
+        
 
 
