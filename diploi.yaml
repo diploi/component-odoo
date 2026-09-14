@@ -30,14 +30,14 @@ storage:
 
 environmentVariables:
   - identifier: INITIAL_ADMIN_PASSWORD
-    defaultValue: "${generate-random-password:12}"
+    defaultValue: '${generate-random-password:12}'
     type: secret
   - identifier: DATABASE
     defaultValue: "odoo"
   - identifier: USER
     defaultValue: "odoo"
   - identifier: PASSWORD
-    defaultValue: "${generate-random-password:24}"
+    defaultValue: '${generate-random-password:16}'
     type: secret
 
 dependencies:
