@@ -27,8 +27,12 @@ spec:
       imagePullSecrets:
         - name: diploi-pull-secret
       initContainers:
-        - name: create-db
-          image: postgres:18
+        - name: odoo-init
+          image: {{ .Values.images.app }}
+          imagePullPolicy: Always
+          command:
+            - /bin/bash
+            - /diploi-init/init.sh
           env:
             - name: PGHOST
               value: {{ .Values.envMap.HOST.value | quote }}
@@ -44,55 +48,19 @@ spec:
               value: {{ .Values.envMap.PASSWORD.value | quote }}
             - name: ODOO_DB
               value: {{ .Values.envMap.DATABASE.value | quote }}
-          command:
-            - sh
-            - -c
-            - |
-              set -eu
-              until pg_isready -d postgres >/dev/null 2>&1; do
-                echo "Waiting for PostgreSQL..."
-                sleep 2
-              done
+            - name: INITIAL_ADMIN_PASSWORD
+              value: {{ .Values.envMap.INITIAL_ADMIN_PASSWORD.value | quote }}
+          volumeMounts:
+            - name: init-script
+              mountPath: /diploi-init
+              readOnly: true
+            - name: data-mount
+              mountPath: /var/lib/odoo
+            {{- if hasKey .Values.storage "extra-addons" }}
+            - name: extra-addons-mount
+              mountPath: /mnt/extra-addons
+            {{- end }}
 
-              psql -d postgres -v ON_ERROR_STOP=1 \
-                -v odoo_user="$ODOO_USER" \
-                -v odoo_password="$ODOO_PASSWORD" \
-                -v odoo_db="$ODOO_DB" <<'SQL'
-              SELECT format(
-                'CREATE ROLE %I LOGIN CREATEDB NOSUPERUSER PASSWORD %L',
-                :'odoo_user',
-                :'odoo_password'
-              )
-              WHERE NOT EXISTS (
-                SELECT 1 FROM pg_roles WHERE rolname = :'odoo_user'
-              )
-              \gexec
-
-              SELECT format(
-                'ALTER ROLE %I WITH LOGIN CREATEDB NOSUPERUSER PASSWORD %L',
-                :'odoo_user',
-                :'odoo_password'
-              )
-              \gexec
-
-              SELECT format(
-                'CREATE DATABASE %I OWNER %I',
-                :'odoo_db',
-                :'odoo_user'
-              )
-              WHERE NOT EXISTS (
-                SELECT 1 FROM pg_database WHERE datname = :'odoo_db'
-              )
-              \gexec
-
-              SELECT format(
-                'GRANT ALL PRIVILEGES ON DATABASE %I TO %I',
-                :'odoo_db',
-                :'odoo_user'
-              )
-              \gexec
-              SQL
-  
       containers:
         - name: app
           image: {{ .Values.images.app }}
@@ -135,6 +103,10 @@ spec:
           volumeMounts:
             - name: data-mount
               mountPath: /var/lib/odoo
+            # Persistent Odoo config, initialized by the odoo-init container
+            - name: data-mount
+              mountPath: /etc/odoo
+              subPath: etc-odoo
             {{- if hasKey .Values.storage "home" }}
             - name: home-mount
               mountPath: /home/odoo
@@ -144,6 +116,9 @@ spec:
               mountPath: /mnt/extra-addons
             {{- end }}
       volumes:
+        - name: init-script
+          configMap:
+            name: app-init
         - name: data-mount
           hostPath:
             path: {{ .Values.storage.data.hostPath }}

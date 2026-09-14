@@ -1,0 +1,121 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-init
+  labels:
+    app: app
+data:
+  init.sh: |
+    #!/bin/bash
+    set -eu
+
+    log() {
+      echo "🟩 $(date -u +"%Y-%m-%dT%H:%M:%SZ") $1"
+    }
+
+    # Run psql as the odoo role against the odoo database
+    odoo_psql() {
+      PGUSER="$ODOO_USER" PGPASSWORD="$ODOO_PASSWORD" psql -d "$ODOO_DB" "$@"
+    }
+
+    log "Waiting for PostgreSQL"
+    until pg_isready -d postgres >/dev/null 2>&1; do
+      sleep 2
+    done
+
+    log "Ensuring Odoo role and database exist"
+    psql -d postgres -v ON_ERROR_STOP=1 \
+      -v odoo_user="$ODOO_USER" \
+      -v odoo_password="$ODOO_PASSWORD" \
+      -v odoo_db="$ODOO_DB" <<'SQL'
+    SELECT format(
+      'CREATE ROLE %I LOGIN CREATEDB NOSUPERUSER PASSWORD %L',
+      :'odoo_user',
+      :'odoo_password'
+    )
+    WHERE NOT EXISTS (
+      SELECT 1 FROM pg_roles WHERE rolname = :'odoo_user'
+    )
+    \gexec
+
+    SELECT format(
+      'ALTER ROLE %I WITH LOGIN CREATEDB NOSUPERUSER PASSWORD %L',
+      :'odoo_user',
+      :'odoo_password'
+    )
+    \gexec
+
+    SELECT format(
+      'CREATE DATABASE %I OWNER %I',
+      :'odoo_db',
+      :'odoo_user'
+    )
+    WHERE NOT EXISTS (
+      SELECT 1 FROM pg_database WHERE datname = :'odoo_db'
+    )
+    \gexec
+
+    SELECT format(
+      'GRANT ALL PRIVILEGES ON DATABASE %I TO %I',
+      :'odoo_db',
+      :'odoo_user'
+    )
+    \gexec
+    SQL
+
+    # /etc/odoo is mounted from the data volume (subPath etc-odoo) in the app
+    # container, so the config survives pod restarts and image updates.
+    if [ ! -f /var/lib/odoo/etc-odoo/odoo.conf ]; then
+      log "Creating default odoo.conf in persistent storage"
+      mkdir -p /var/lib/odoo/etc-odoo
+      cat > /var/lib/odoo/etc-odoo/odoo.conf <<EOF
+    [options]
+    addons_path = /mnt/extra-addons
+    data_dir = /var/lib/odoo
+    proxy_mode = True
+    admin_passwd = $INITIAL_ADMIN_PASSWORD
+    db_host = $PGHOST
+    db_port = $PGPORT
+    db_user = $ODOO_USER
+    db_password = $ODOO_PASSWORD
+    db_name = $ODOO_DB
+    EOF
+    fi
+
+    log "Checking if Odoo database is initialized"
+    INITIALIZED=$(odoo_psql -tAc "SELECT value FROM diploi_parameters WHERE key = 'initialization'" 2>/dev/null || true)
+
+    if [ "$INITIALIZED" != "done" ]; then
+      log "Initializing Odoo database (this can take a few minutes)"
+      odoo --config=/var/lib/odoo/etc-odoo/odoo.conf \
+        --init=base \
+        --stop-after-init
+
+      log "Setting initial admin password"
+      python3 <<'PYEOF'
+    import os
+
+    import psycopg2
+    from passlib.context import CryptContext
+
+    connection = psycopg2.connect(
+        dbname=os.environ["ODOO_DB"],
+        user=os.environ["ODOO_USER"],
+        password=os.environ["ODOO_PASSWORD"],
+        host=os.environ["PGHOST"],
+        port=os.environ["PGPORT"],
+    )
+    cursor = connection.cursor()
+    password_hash = CryptContext(["pbkdf2_sha512"]).hash(os.environ["INITIAL_ADMIN_PASSWORD"])
+    cursor.execute("UPDATE res_users SET password = %s WHERE login = 'admin'", (password_hash,))
+    connection.commit()
+    connection.close()
+    print("Admin password set")
+    PYEOF
+
+      odoo_psql -v ON_ERROR_STOP=1 \
+        -c "CREATE TABLE IF NOT EXISTS diploi_parameters (key TEXT PRIMARY KEY, value TEXT)" \
+        -c "INSERT INTO diploi_parameters (key, value) VALUES ('initialization', 'done') ON CONFLICT (key) DO NOTHING"
+    fi
+
+    log "Odoo init complete"
