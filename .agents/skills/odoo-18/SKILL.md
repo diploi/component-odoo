@@ -4,8 +4,10 @@ description: >-
   This component runs Odoo 18.0, but the odoo-guidelines, odoo-web-guidelines,
   odoo-security and odoo-review skills describe Odoo master. Lists where they
   are wrong for 18.0 (access rights, SQL constraints, domains, route types,
-  test tags, ...) and what to write instead. Read it before using any of those
-  skills; where they disagree, this file wins.
+  test tags, ...) and what to write instead, and how public pages rendered
+  by a controller load their assets on 18.0. Read it before using any of
+  those skills or writing a page template; where they disagree, this file
+  wins.
 ---
 
 # Odoo 18.0 corrections to the master skills
@@ -125,6 +127,74 @@ rule's `domain_force`, are normal 18.0 syntax.
   `setElementContent`; `setInnerHtml` and `htmlJoin` do not exist. Owl's
   tagged-template ``markup`...` `` does (Owl 2.8).
 - "Avoid getters": Owl on 18.0 has no `computed`. Use a plain function.
+
+## Public pages
+
+Odoo's skills do not cover pages a controller renders for the browser. On 18.0:
+
+- The page template calls **`web.frontend_layout`**. It loads the
+  `web.assets_frontend` bundles (Bootstrap, the frontend JS and every addon's
+  frontend assets) and adds a header and footer; `t-set` `title`, `no_header`
+  or `no_footer` to adjust it. `web.layout` is only the bare HTML shell: a page
+  on it has no CSS and no JavaScript. With `portal` installed,
+  `portal.frontend_layout` adds the portal navigation; with `website`,
+  `website.layout` adds the site's menu and theme.
+- The addon's styles, JavaScript and Owl templates go into `web.assets_frontend`
+  in the manifest. Never write `<link>` or `<script>` tags pointing at files in
+  `static/`: SCSS is only compiled inside a bundle, and `@web/...`/`@odoo/owl`
+  imports only resolve there.
+- Interactive parts are Owl components registered in the `public_components`
+  registry and placed with an `<owl-component>` tag, which the frontend mounts
+  on page load; props are passed as JSON.
+
+```python
+# controllers/main.py
+class LibraryPublic(http.Controller):
+    @http.route('/library', type='http', auth='public')
+    def library(self):
+        return request.render('library.page', {'start': 3})
+```
+
+```xml
+<!-- views/library_templates.xml, listed in the manifest's data -->
+<template id="page" name="Library page">
+    <t t-call="web.frontend_layout">
+        <t t-set="title">Library</t>
+        <div class="o_library container py-5">
+            <owl-component name="library.counter" t-att-props="json.dumps({'start': start})"/>
+        </div>
+    </t>
+</template>
+```
+
+```python
+# __manifest__.py
+'assets': {
+    'web.assets_frontend': [
+        'library/static/src/**/*',  # counter.js, counter.xml, counter.scss
+    ],
+},
+```
+
+```js
+// static/src/counter/counter.js
+import { Component, useState } from "@odoo/owl";
+import { registry } from "@web/core/registry";
+
+export class Counter extends Component {
+    static template = "library.Counter";
+    static props = { start: Number };
+
+    setup() {
+        this.state = useState({ value: this.props.start });
+    }
+}
+
+registry.category("public_components").add("library.counter", Counter);
+```
+
+After adding SCSS, run the `odoo-scss-check` script; it compiles
+`web.assets_frontend` too.
 
 ## Rules that do not apply to this folder
 

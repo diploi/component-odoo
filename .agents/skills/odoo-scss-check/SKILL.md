@@ -17,10 +17,11 @@ log; editing the file itself raises nothing.
 
 ## Run the check after every SCSS change
 
-Inside the Odoo container, from this folder:
+In the Odoo container, this folder is mounted at `/mnt/extra-addons`. Use the
+absolute path; it works from any directory:
 
 ```sh
-python3 .agents/skills/odoo-scss-check/check_scss.py
+python3 /mnt/extra-addons/.agents/skills/odoo-scss-check/check_scss.py
 ```
 
 It compiles every asset bundle that contains SCSS from this folder's addons,
@@ -31,9 +32,8 @@ database from `/etc/odoo/odoo.conf` and writes nothing.
 - An addon's SCSS is only in a bundle once the addon is **installed**. The check
   reports uninstalled addons with `SKIP`; install the addon to check it.
 - Manifest `assets` changes are picked up without upgrading the module.
-- If the agent runs outside the Odoo container, prefix the command with
-  `diploi exec app --` and use the path the folder is mounted at there
-  (`/mnt/extra-addons`).
+- If the agent runs outside the Odoo container, prefix the same command with
+  `diploi exec app --`.
 
 Do not report SCSS work as done until the check passes.
 

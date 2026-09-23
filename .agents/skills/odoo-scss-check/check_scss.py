@@ -6,9 +6,9 @@ failures only inside the served CSS. This script compiles the bundles up front,
 the same way the server does, so a broken stylesheet is caught right after the
 edit.
 
-Run it inside the Odoo container:
+Run it inside the Odoo container, where this folder is /mnt/extra-addons:
 
-    python3 .agents/skills/odoo-scss-check/check_scss.py
+    python3 /mnt/extra-addons/.agents/skills/odoo-scss-check/check_scss.py
 
 Exit status: 0 when every bundle compiles, 1 on SCSS errors, 2 when the check
 itself could not run.

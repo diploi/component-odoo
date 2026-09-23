@@ -21,10 +21,12 @@ not list them, read the matching `SKILL.md` before changing any addon file:
 | `.agents/skills/odoo-review/SKILL.md`         | reviewing a diff, PR or module                                                                                                   |
 | `.agents/skills/odoo-scss-check/SKILL.md`     | any `.scss` file, or a stylesheet in a manifest's `assets`                                                                       |
 
-**After changing SCSS, run `python3 .agents/skills/odoo-scss-check/check_scss.py`
-in the Odoo container.** Odoo compiles SCSS with libsass, which rejects parts of
-modern Sass and CSS syntax; the error shows only in the browser, and it breaks
-the styling of the whole bundle. The skill lists the constructs that fail.
+**After changing SCSS, run
+`python3 /mnt/extra-addons/.agents/skills/odoo-scss-check/check_scss.py` in the
+Odoo container** (this folder is mounted there at `/mnt/extra-addons`). Odoo
+compiles SCSS with libsass, which rejects parts of modern Sass and CSS syntax;
+the error shows only in the browser, and it breaks the styling of the whole
+bundle. The skill lists the constructs that fail.
 
 `odoo-18` and `odoo-scss-check` are maintained with this component. The other
 four are Odoo's own, copied unchanged from `skills/` on the master branch of
