@@ -1,3 +1,5 @@
+<img alt="icon" src=".diploi/icon.svg" width="32">
+
 # Odoo Component for Diploi
 
 [![launch with diploi badge](https://diploi.com/launch.svg)](https://diploi.com/component/odoo)
@@ -44,23 +46,23 @@ The init script lives in the component helm files (`.diploi/helm/app-init-config
 
 ### Storage
 
-| Path | Volume | Description |
-| --- | --- | --- |
-| `/var/lib/odoo` | `data` | Odoo filestore and sessions. Persisted in all stages. |
-| `/etc/odoo` | `data` (`etc-odoo`) | Persistent `odoo.conf`. Mounted from the data volume so config survives pod restarts and image updates. |
-| `/mnt/extra-addons` | `extra-addons` | Custom Odoo modules. |
-| `/home/odoo` | `home` | Home directory for the `odoo` user. |
+| Path                | Volume              | Description                                                                                             |
+| ------------------- | ------------------- | ------------------------------------------------------------------------------------------------------- |
+| `/var/lib/odoo`     | `data`              | Odoo filestore and sessions. Persisted in all stages.                                                   |
+| `/etc/odoo`         | `data` (`etc-odoo`) | Persistent `odoo.conf`. Mounted from the data volume so config survives pod restarts and image updates. |
+| `/mnt/extra-addons` | `extra-addons`      | Custom Odoo modules.                                                                                    |
+| `/home/odoo`        | `home`              | Home directory for the `odoo` user.                                                                     |
 
 The default config sets `addons_path = /mnt/extra-addons`, `data_dir = /var/lib/odoo`, `proxy_mode = True`, and the PostgreSQL connection settings.
 
 ### Environment variables
 
-| Variable | Description |
-| --- | --- |
+| Variable                 | Description                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------- |
 | `INITIAL_ADMIN_PASSWORD` | Initial `admin` login password and Odoo master password. Generated per project. |
-| `DATABASE` | PostgreSQL database name. Default `odoo`. |
-| `USER` | PostgreSQL role used by Odoo. Default `odoo`. |
-| `PASSWORD` | Password for the Odoo PostgreSQL role. Generated per project. |
+| `DATABASE`               | PostgreSQL database name. Default `odoo`.                                       |
+| `USER`                   | PostgreSQL role used by Odoo. Default `odoo`.                                   |
+| `PASSWORD`               | Password for the Odoo PostgreSQL role. Generated per project.                   |
 
 PostgreSQL connection details (`HOST`, `PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`) come from the PostgreSQL add-on.
 

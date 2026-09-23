@@ -11,9 +11,17 @@ before changing any addon file:
 | `.agents/skills/odoo-web-guidelines/SKILL.md` | anything under an addon's `static/`: JavaScript, Owl templates, SCSS                                                             |
 | `.agents/skills/odoo-security/SKILL.md`       | `sudo()`, raw SQL, `eval`, controllers, public or RPC-callable methods, `ir.access`                                              |
 | `.agents/skills/odoo-review/SKILL.md`         | reviewing a diff, PR or module                                                                                                   |
+| `.agents/skills/odoo-scss-check/SKILL.md`     | any `.scss` file, or a stylesheet in a manifest's `assets`                                                                       |
 
-The skills describe addons as living in `addons/*`; in this component the addons
-are the top-level directories of this folder (see below).
+**After changing SCSS, run `python3 .agents/skills/odoo-scss-check/check_scss.py`
+in the Odoo container.** Odoo compiles SCSS with libsass, which rejects parts of
+modern Sass and CSS syntax; the error shows only in the browser, and it breaks
+the styling of the whole bundle. The skill lists the constructs that fail.
+
+`odoo-scss-check` is maintained with this component; the other skills are
+Odoo's official ones, copied in unchanged. They describe addons as living in
+`addons/*`; in this component the addons are the top-level directories of this
+folder (see below).
 
 ## Diploi
 
