@@ -1,15 +1,23 @@
 ## Skills
 
-Odoo's house rules ship with this component as Agent Skills in `.agents/skills/`.
-Agents that scan that directory (Codex, OpenCode, Cursor, Copilot) list them when
-started in this folder. If yours does not list them, read the matching `SKILL.md`
-before changing any addon file:
+**This component runs Odoo 18.0. Odoo's skills below describe Odoo master**, and
+parts of them are wrong for 18.0, e.g. `security/ir.access.csv` (18.0 uses
+`ir.model.access.csv` and `ir.rule`), `models.Constraint` (18.0 uses
+`_sql_constraints`), `fields.Domain` and the default test tags. Read
+`.agents/skills/odoo-18/SKILL.md` before using them; where they disagree, it wins.
+Check any API you are unsure of against the 18.0 source in the Odoo container,
+`/usr/lib/python3/dist-packages/odoo`.
+
+The skills live in `.agents/skills/`. Agents that scan that directory (Codex,
+OpenCode, Cursor, Copilot) list them when started in this folder. If yours does
+not list them, read the matching `SKILL.md` before changing any addon file:
 
 | Skill                                         | Read before touching                                                                                                             |
 | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `.agents/skills/odoo-18/SKILL.md`             | any addon file, together with the skill below that covers it                                                                     |
 | `.agents/skills/odoo-guidelines/SKILL.md`     | anything in an addon outside `static/`: manifest, models, fields, controllers, XML views and data, reports, access rights, tests |
 | `.agents/skills/odoo-web-guidelines/SKILL.md` | anything under an addon's `static/`: JavaScript, Owl templates, SCSS                                                             |
-| `.agents/skills/odoo-security/SKILL.md`       | `sudo()`, raw SQL, `eval`, controllers, public or RPC-callable methods, `ir.access`                                              |
+| `.agents/skills/odoo-security/SKILL.md`       | `sudo()`, raw SQL, `eval`, controllers, public or RPC-callable methods, access rights                                            |
 | `.agents/skills/odoo-review/SKILL.md`         | reviewing a diff, PR or module                                                                                                   |
 | `.agents/skills/odoo-scss-check/SKILL.md`     | any `.scss` file, or a stylesheet in a manifest's `assets`                                                                       |
 
@@ -18,10 +26,11 @@ in the Odoo container.** Odoo compiles SCSS with libsass, which rejects parts of
 modern Sass and CSS syntax; the error shows only in the browser, and it breaks
 the styling of the whole bundle. The skill lists the constructs that fail.
 
-`odoo-scss-check` is maintained with this component; the other skills are
-Odoo's official ones, copied in unchanged. They describe addons as living in
-`addons/*`; in this component the addons are the top-level directories of this
-folder (see below).
+`odoo-18` and `odoo-scss-check` are maintained with this component. The other
+four are Odoo's own, copied unchanged from `skills/` on the master branch of
+Odoo's repository; never edit them, put corrections in `odoo-18`. Odoo's
+skills describe addons as living in `addons/*`; in this component the addons
+are the top-level directories of this folder (see below).
 
 ## Diploi
 
