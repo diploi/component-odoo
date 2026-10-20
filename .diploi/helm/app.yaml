@@ -38,9 +38,11 @@ spec:
               value: {{ .Values.envMap.HOST.value | quote }}
             - name: PGPORT
               value: {{ .Values.envMap.PORT.value | quote }}
-            - name: PGUSER
+            # Not PGUSER/PGPASSWORD: Odoo 19+ reads PG* variables and they
+            # override odoo.conf, so the superuser must not be exposed as them.
+            - name: POSTGRES_USER
               value: {{ .Values.envMap.POSTGRES_USER.value | quote }}
-            - name: PGPASSWORD
+            - name: POSTGRES_PASSWORD
               value: {{ .Values.envMap.POSTGRES_PASSWORD.value | quote }}
             - name: ODOO_USER
               value: {{ .Values.envMap.USER.value | quote }}
