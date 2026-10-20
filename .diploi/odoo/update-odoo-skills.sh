@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
 # Replace Odoo's skills in .agents/skills/ with the ones from Odoo's repository.
 #
-#   .diploi/odoo/update-odoo-skills.sh [ref]    # ref defaults to master
+#   .diploi/odoo/update-odoo-skills.sh [ref]    # ref defaults to 20.0
 #
-# Odoo publishes its skills in skills/ on master only. They are copied here
-# unchanged; the 18.0 corrections live in our own odoo-18 skill, which this
-# script never touches. After updating, read the upstream changes it prints and
-# update .agents/skills/odoo-18/SKILL.md where they affect 18.0.
+# The skills are copied unchanged from skills/ on the branch of the Odoo version
+# this component runs. Our own skills (odoo-scss-check) are never touched.
 set -euo pipefail
 
-ref="${1:-master}"
+ref="${1:-20.0}"
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 skills_dir="$(cd "$script_dir/../../.agents/skills" && pwd)"
 commit_file="$script_dir/odoo-skills-commit"
@@ -52,4 +50,4 @@ else
     echo "Now at odoo/odoo@$commit."
 fi
 echo
-echo "Review these changes against .agents/skills/odoo-18/SKILL.md, then commit."
+echo "Review these changes, then commit."

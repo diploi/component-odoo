@@ -72,6 +72,7 @@ data:
     [options]
     addons_path = /mnt/extra-addons
     data_dir = /var/lib/odoo
+    http_interface = 0.0.0.0
     proxy_mode = True
     admin_passwd = $INITIAL_ADMIN_PASSWORD
     db_host = $PGHOST

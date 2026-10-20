@@ -9,7 +9,7 @@ description: >-
 
 # Checking SCSS against Odoo's compiler
 
-Odoo 18 compiles SCSS with **libsass** (LibSass 3.6, deprecated since 2020), not
+Odoo 20 compiles SCSS with **libsass** (LibSass 3.6, deprecated since 2020), not
 Dart Sass. It compiles all SCSS in an asset bundle as one source, so one error in
 an addon removes the compiled styles of the whole bundle, e.g. the entire backend
 in `web.assets_backend`. The error then shows only in the browser and the server

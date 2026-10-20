@@ -1,4 +1,4 @@
-FROM odoo:19.0-20261015
+FROM odoo:20.0-20261015
 
 USER root
 
