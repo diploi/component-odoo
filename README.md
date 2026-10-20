@@ -50,7 +50,7 @@ The init script lives in the component helm files (`.diploi/helm/app-init-config
 | ------------------- | ------------------- | ------------------------------------------------------------------------------------------------------- |
 | `/var/lib/odoo`     | `data`              | Odoo filestore and sessions. Persisted in all stages.                                                   |
 | `/etc/odoo`         | `data` (`etc-odoo`) | Persistent `odoo.conf`. Mounted from the data volume so config survives pod restarts and image updates. |
-| `/mnt/extra-addons` | `extra-addons`      | Custom Odoo modules.                                                                                    |
+| `/mnt/extra-addons` | `code`              | Custom Odoo modules. The component folder of the project repository.                                    |
 | `/home/odoo`        | `home`              | Home directory for the `odoo` user.                                                                     |
 
 The default config sets `addons_path = /mnt/extra-addons`, `data_dir = /var/lib/odoo`, `proxy_mode = True`, and the PostgreSQL connection settings.
