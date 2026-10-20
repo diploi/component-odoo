@@ -1,7 +1,7 @@
 diploiVersion: v1.0
 type: component
 name: Odoo
-description: Odoo 18 ERP & CRM
+description: Odoo 19 ERP & CRM
 
 supportsAdditionalHosts: { serviceName: 'app' }
 

@@ -7,7 +7,7 @@
 Launch a trial, no registration needed
 https://diploi.com/component/odoo
 
-Uses the official [odoo](https://hub.docker.com/_/odoo) Docker image (Odoo 18).
+Uses the official [odoo](https://hub.docker.com/_/odoo) Docker image (Odoo 19).
 
 Requires **PostgreSQL**, which is included as a Diploi add-on.
 
@@ -48,10 +48,12 @@ The init script lives in the component helm files (`.diploi/helm/app-init-config
 | --- | --- | --- |
 | `/var/lib/odoo` | `data` | Odoo filestore and sessions. Persisted in all stages. |
 | `/etc/odoo` | `data` (`etc-odoo`) | Persistent `odoo.conf`. Mounted from the data volume so config survives pod restarts and image updates. |
-| `/mnt/extra-addons` | `extra-addons` | Custom Odoo modules. |
+| `/mnt/extra-addons` | `code` | Custom Odoo modules. The component folder of the project repository. |
 | `/home/odoo` | `home` | Home directory for the `odoo` user. |
 
 The default config sets `addons_path = /mnt/extra-addons`, `data_dir = /var/lib/odoo`, `proxy_mode = True`, and the PostgreSQL connection settings.
+
+Demo data is not installed. Odoo 19 only installs demo data when explicitly requested with `--with-demo`.
 
 ### Environment variables
 
@@ -79,4 +81,4 @@ The start command can be changed with the `containerCommands.productionStart` fi
 ## Links
 
 - [Adding Odoo to a project](https://docs.diploi.com/building/components/odoo)
-- [Odoo documentation](https://www.odoo.com/documentation/18.0/)
+- [Odoo documentation](https://www.odoo.com/documentation/19.0/)

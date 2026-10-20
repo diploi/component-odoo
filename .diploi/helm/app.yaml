@@ -56,7 +56,7 @@ spec:
               readOnly: true
             - name: data-mount
               mountPath: /var/lib/odoo
-            {{- if hasKey .Values.storage "extra-addons" }}
+            {{- if hasKey .Values.storage "code" }}
             - name: extra-addons-mount
               mountPath: /mnt/extra-addons
             {{- end }}
