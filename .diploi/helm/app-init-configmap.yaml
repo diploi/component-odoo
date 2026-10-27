@@ -144,37 +144,40 @@ data:
     get_parameter() { psql -tAc "SELECT value FROM diploi_parameters WHERE key = '$1'"; }
     set_addons_path() { sed -i "s#^addons_path = .*#addons_path = $1#" "$CONF"; }
 
+    mounted_sets=" "
     mounted_path=/mnt/extra-addons
     enabled_path=/mnt/extra-addons
     for entry in ${DIPLOI_MODULE_SETS:-}; do
       set_name=${entry%%=*}
       [ -f "/mnt/addons/$set_name/manifest.json" ] || { log "Module set $set_name: no manifest.json in the bundle, ignored"; continue; }
+      mounted_sets="$mounted_sets$set_name "
       mounted_path="$mounted_path,/mnt/addons/$set_name"
       [ "${entry#*=}" = true ] && enabled_path="$enabled_path,/mnt/addons/$set_name"
     done
+
+    # A set recorded as installed whose bundle is not mounted: its modules are in the database but their code is
+    # gone, and every Odoo command below would fail on them. This happens when the core no longer had the bundle when
+    # the set was unchecked (a new core after a stop and start). Checking the set again gets the bundle back.
+    for key in $(psql -tAc "SELECT key FROM diploi_parameters WHERE key LIKE 'module_set:%'"); do
+      set_name=${key#module_set:}
+      case "$mounted_sets" in *" $set_name "*) ;; *)
+        log "ERROR: module set $set_name is installed but its bundle is not available. Check '$set_name' again in the"
+        log "       deployment options, let Odoo start, and then uncheck it to uninstall the modules"
+        exit 1 ;;
+      esac
+    done
+
     # Every mounted set is on the path while installing and uninstalling
     set_addons_path "$mounted_path"
 
+    # Uninstalls first: a set can conflict with another (OCA's web_responsive excludes web_enterprise), and swapping
+    # them in one change must work
     for entry in ${DIPLOI_MODULE_SETS:-}; do
       set_name=${entry%%=*}
-      checked=${entry#*=}
-      [ -f "/mnt/addons/$set_name/manifest.json" ] || continue
-      build=$(manifest_value "$set_name" build)
-      installed=$(get_parameter "module_set:$set_name")
-
-      if [ "$checked" = true ] && [ -z "$installed" ]; then
-        modules=$(manifest_value "$set_name" installModules)
-        log "Module set $set_name: installing $modules (build $build)"
-        odoo --config="$CONF" --init="$modules" --stop-after-init
-        set_parameter "module_set:$set_name" "$build"
-      elif [ "$checked" = true ] && [ "$installed" != "$build" ]; then
-        modules=$(manifest_value "$set_name" installModules)
-        log "Module set $set_name: updating $modules ($installed -> $build)"
-        odoo --config="$CONF" --update="$modules" --stop-after-init
-        set_parameter "module_set:$set_name" "$build"
-      elif [ "$checked" != true ] && [ -n "$installed" ]; then
-        log "Module set $set_name: uninstalling its modules and the modules depending on them"
-        MODULES=$(manifest_value "$set_name" modules) odoo shell --config="$CONF" --no-http <<'PYEOF'
+      case "$mounted_sets" in *" $set_name "*) ;; *) continue ;; esac
+      [ "${entry#*=}" != true ] && [ -n "$(get_parameter "module_set:$set_name")" ] || continue
+      log "Module set $set_name: uninstalling its modules and the modules depending on them"
+      MODULES=$(manifest_value "$set_name" modules) odoo shell --config="$CONF" --no-http <<'PYEOF'
     import os
     names = os.environ["MODULES"].split(",")
     modules = env["ir.module.module"].search([("name", "in", names), ("state", "not in", ["uninstalled", "uninstallable"])])
@@ -182,20 +185,27 @@ data:
     modules.button_immediate_uninstall()
     env.cr.commit()
     PYEOF
-        psql -v ON_ERROR_STOP=1 -c "DELETE FROM diploi_parameters WHERE key = 'module_set:$set_name'"
-      fi
+      psql -v ON_ERROR_STOP=1 -c "DELETE FROM diploi_parameters WHERE key = 'module_set:$set_name'"
     done
 
-    # A set recorded as installed whose bundle is not mounted: its modules are in the database but their code is
-    # gone, so Odoo cannot start. This happens when a set was unchecked and the deployment stopped before Odoo
-    # started again (a new core never fetched the bundle). Checking the set again gets the bundle back.
-    for key in $(psql -tAc "SELECT key FROM diploi_parameters WHERE key LIKE 'module_set:%'"); do
-      set_name=${key#module_set:}
-      case " ${DIPLOI_MODULE_SETS:-} " in *" $set_name="*) ;; *)
-        log "ERROR: module set $set_name is installed but its bundle is not available. Check '$set_name' again in the"
-        log "       deployment options, let Odoo start, and then uncheck it to uninstall the modules"
-        exit 1 ;;
-      esac
+    for entry in ${DIPLOI_MODULE_SETS:-}; do
+      set_name=${entry%%=*}
+      case "$mounted_sets" in *" $set_name "*) ;; *) continue ;; esac
+      [ "${entry#*=}" = true ] || continue
+      build=$(manifest_value "$set_name" build)
+      installed=$(get_parameter "module_set:$set_name")
+
+      if [ -z "$installed" ]; then
+        modules=$(manifest_value "$set_name" installModules)
+        log "Module set $set_name: installing $modules (build $build)"
+        odoo --config="$CONF" --init="$modules" --stop-after-init
+        set_parameter "module_set:$set_name" "$build"
+      elif [ "$installed" != "$build" ]; then
+        modules=$(manifest_value "$set_name" installModules)
+        log "Module set $set_name: updating $modules ($installed -> $build)"
+        odoo --config="$CONF" --update="$modules" --stop-after-init
+        set_parameter "module_set:$set_name" "$build"
+      fi
     done
 
     set_addons_path "$enabled_path"
