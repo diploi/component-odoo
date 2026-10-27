@@ -24,6 +24,40 @@ storage:
     gid: 1000
     sizeMiB: 2048
 
+# Module sets: the core fetches the checked sets (assets below) before Odoo starts, the init container installs their
+# modules; unchecking a set uninstalls them on the next start. See docs/OdooModules.md in the platform repository
+parameterGroups:
+  - name: Modules
+    identifier: modules
+    description: Extra module sets, installed on the next start. Unchecking a set uninstalls its modules and their data
+    parameters:
+      - name: Odoo Enterprise
+        identifier: ENTERPRISE
+        type: boolean
+        defaultValue: false
+      - name: Alixea modules
+        identifier: ALIXEA_MODULES
+        type: boolean
+        defaultValue: false
+      - name: OCA modules
+        identifier: OCA_MODULES
+        type: boolean
+        defaultValue: false
+
+# Bundles in the assets bucket, built with scripts/odoo-modules/import.sh of the platform repository. Enterprise is
+# taken at the nightly date of the image in the Dockerfile; bump both together
+assets:
+  - identifier: enterprise
+    source: odoo/enterprise/19.0/20261015.tar.gz
+    parameter: ENTERPRISE
+  # A placeholder with one dummy module until the Alixea modules exist
+  - identifier: alixea
+    source: odoo/alixea/19.0/1.tar.gz
+    parameter: ALIXEA_MODULES
+  - identifier: oca
+    source: odoo/oca/19.0/1.tar.gz
+    parameter: OCA_MODULES
+
 environmentVariables:
   - identifier: INITIAL_ADMIN_PASSWORD
     defaultValue: '${generate-random-password:12}'

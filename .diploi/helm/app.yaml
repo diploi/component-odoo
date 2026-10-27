@@ -52,6 +52,9 @@ spec:
               value: {{ .Values.envMap.DATABASE.value | quote }}
             - name: INITIAL_ADMIN_PASSWORD
               value: {{ .Values.envMap.INITIAL_ADMIN_PASSWORD.value | quote }}
+            # The module sets the core has on the disk, "<set>=<checked> ..."; the mounts below follow the same list
+            - name: DIPLOI_MODULE_SETS
+              value: "{{- range $identifier, $asset := (.Values.assets | default dict) }}{{- if $asset.hostPath }}{{ $identifier }}={{ $asset.enabled }} {{ end }}{{- end }}"
           volumeMounts:
             - name: init-script
               mountPath: /diploi-init
@@ -61,6 +64,13 @@ spec:
             {{- if hasKey .Values.storage "code" }}
             - name: extra-addons-mount
               mountPath: /mnt/extra-addons
+            {{- end }}
+            {{- range $identifier, $asset := (.Values.assets | default dict) }}
+            {{- if $asset.hostPath }}
+            - name: addons-{{ $identifier }}
+              mountPath: /mnt/addons/{{ $identifier }}
+              readOnly: true
+            {{- end }}
             {{- end }}
 
       containers:
@@ -117,6 +127,13 @@ spec:
             - mountPath: /mnt/extra-addons
               name: extra-addons-mount
             {{- end }}
+            {{- range $identifier, $asset := (.Values.assets | default dict) }}
+            {{- if $asset.hostPath }}
+            - name: addons-{{ $identifier }}
+              mountPath: /mnt/addons/{{ $identifier }}
+              readOnly: true
+            {{- end }}
+            {{- end }}
       volumes:
         - name: init-script
           configMap:
@@ -135,6 +152,15 @@ spec:
             path: "{{ .Values.storage.code.hostPath }}{{ .Values.folder }}"
             type: DirectoryOrCreate
         {{- end }}
-        
+        # Module set bundles the core fetched (docs/OdooModules.md in the platform repository)
+        {{- range $identifier, $asset := (.Values.assets | default dict) }}
+        {{- if $asset.hostPath }}
+        - name: addons-{{ $identifier }}
+          hostPath:
+            path: {{ $asset.hostPath | quote }}
+            type: Directory
+        {{- end }}
+        {{- end }}
+
 
 

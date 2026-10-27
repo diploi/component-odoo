@@ -57,6 +57,22 @@ The default config sets `addons_path = /mnt/extra-addons`, `data_dir = /var/lib/
 
 Demo data is not installed. Odoo 19 only installs demo data when explicitly requested with `--with-demo`.
 
+### Module sets
+
+The **Modules** group of the deployment options has a checkbox per extra module set: **Odoo Enterprise**, **Alixea
+modules** and **OCA modules**. The core fetches a checked set's bundle (`assets` in `diploi.yaml`) before Odoo starts
+and mounts it at `/mnt/addons/<set>`; the init container adds it to `addons_path` and installs the set's main modules
+(`installModules` in the bundle's `manifest.json`, for Enterprise `web_enterprise`). The set's other modules then
+appear under Apps. A change of the checkboxes restarts Odoo:
+
+- Checking a set installs its modules on that start.
+- Unchecking a set uninstalls every module of the set, and with them the modules that depend on them and their data.
+- If a set was unchecked and the deployment stopped before Odoo started again, the modules are still installed but
+  the bundle is gone: the init container stops with a message. Check the set again, let Odoo start, then uncheck it.
+
+The bundles are built with `scripts/odoo-modules/import.sh` in the platform repository; Enterprise must match the
+nightly date of the image in the `Dockerfile`, so both are bumped together. Details in `docs/OdooModules.md` there.
+
 ### Environment variables
 
 | Variable                 | Description                                                                     |
