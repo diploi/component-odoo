@@ -183,6 +183,9 @@ data:
     modules = env["ir.module.module"].search([("name", "in", names), ("state", "not in", ["uninstalled", "uninstallable"])])
     print("Uninstalling", ", ".join(modules.mapped("name")))
     modules.button_immediate_uninstall()
+    # Drop the catalog rows too, so the set's modules don't linger on the Apps page; their code is unmounted
+    # once the set is off, and re-checking the set reinstalls them via --init
+    env["ir.module.module"].search([("name", "in", names), ("state", "=", "uninstalled")]).unlink()
     env.cr.commit()
     PYEOF
       psql -v ON_ERROR_STOP=1 -c "DELETE FROM diploi_parameters WHERE key = 'module_set:$set_name'"
