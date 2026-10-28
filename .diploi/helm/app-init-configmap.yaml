@@ -125,9 +125,14 @@ data:
     # Module sets (docs/OdooModules.md in the platform repository). The core mounts every set bundle it has at
     # /mnt/addons/<set> and lists them in DIPLOI_MODULE_SETS as "<set>=<checked> ..."; diploi_parameters remembers
     # which sets are installed (module_set:<set> = the bundle's build). Checked and not installed: install the
-    # bundle's installModules. Checked with another build: update them. Unchecked and installed: uninstall every
-    # module of the set, which Odoo extends to the modules depending on them. The bundle is still mounted for that
-    # start, because the core keeps a bundle on the disk while the component declares it.
+    # bundle's installModules. Checked with another build: update them. Unchecked: any of the set's modules still in
+    # the database is cleaned up, whatever the record says: pending ones are cancelled, installed ones uninstalled
+    # (Odoo extends that to the modules depending on them) and the rows removed. The bundle is still mounted for
+    # that, because the core keeps a bundle on the disk while the component declares it.
+    #
+    # Only checked sets are on addons_path, plus an unchecked set during its own cleanup: Odoo rereads the path on
+    # every install and uninstall, adding rows to the Apps page and finishing pending installs of any module it
+    # finds there.
     #
 
     CONF=/var/lib/odoo/etc-odoo/odoo.conf
@@ -145,13 +150,11 @@ data:
     set_addons_path() { sed -i "s#^addons_path = .*#addons_path = $1#" "$CONF"; }
 
     mounted_sets=" "
-    mounted_path=/mnt/extra-addons
     enabled_path=/mnt/extra-addons
     for entry in ${DIPLOI_MODULE_SETS:-}; do
       set_name=${entry%%=*}
       [ -f "/mnt/addons/$set_name/manifest.json" ] || { log "Module set $set_name: no manifest.json in the bundle, ignored"; continue; }
       mounted_sets="$mounted_sets$set_name "
-      mounted_path="$mounted_path,/mnt/addons/$set_name"
       [ "${entry#*=}" = true ] && enabled_path="$enabled_path,/mnt/addons/$set_name"
     done
 
@@ -167,30 +170,37 @@ data:
       esac
     done
 
-    # Every mounted set is on the path while installing and uninstalling
-    set_addons_path "$mounted_path"
-
-    # Uninstalls first: a set can conflict with another (OCA's web_responsive excludes web_enterprise), and swapping
-    # them in one change must work
+    # Unchecked sets first: a set can conflict with another (OCA's web_responsive excludes web_enterprise), and
+    # swapping them in one change must work
     for entry in ${DIPLOI_MODULE_SETS:-}; do
       set_name=${entry%%=*}
       case "$mounted_sets" in *" $set_name "*) ;; *) continue ;; esac
-      [ "${entry#*=}" != true ] && [ -n "$(get_parameter "module_set:$set_name")" ] || continue
-      log "Module set $set_name: uninstalling its modules and the modules depending on them"
-      MODULES=$(manifest_value "$set_name" modules) odoo shell --config="$CONF" --no-http <<'PYEOF'
+      [ "${entry#*=}" != true ] || continue
+      modules=$(manifest_value "$set_name" modules)
+      in_list="'$(echo "$modules" | sed "s/,/','/g")'"
+      if [ "$(psql -tAc "SELECT count(*) FROM ir_module_module WHERE name IN ($in_list)")" != 0 ]; then
+        log "Module set $set_name: removing its modules and the modules depending on them"
+        set_addons_path "$enabled_path,/mnt/addons/$set_name"
+        MODULES=$modules odoo shell --config="$CONF" --no-http <<'PYEOF'
     import os
     names = os.environ["MODULES"].split(",")
-    modules = env["ir.module.module"].search([("name", "in", names), ("state", "not in", ["uninstalled", "uninstallable"])])
-    print("Uninstalling", ", ".join(modules.mapped("name")))
-    modules.button_immediate_uninstall()
-    # Drop the catalog rows too, so the set's modules don't linger on the Apps page; their code is unmounted
-    # once the set is off, and re-checking the set reinstalls them via --init
-    env["ir.module.module"].search([("name", "in", names), ("state", "=", "uninstalled")]).unlink()
+    Module = env["ir.module.module"]
+    Module.search([("name", "in", names), ("state", "=", "to install")]).button_install_cancel()
+    Module.search([("name", "in", names), ("state", "=", "to upgrade")]).button_upgrade_cancel()
+    Module.search([("name", "in", names), ("state", "=", "to remove")]).button_uninstall_cancel()
+    installed = Module.search([("name", "in", names), ("state", "=", "installed")])
+    if installed:
+        print("Uninstalling", ", ".join(installed.mapped("name")))
+        installed.button_immediate_uninstall()
+    # Without the rows the set's modules don't linger on the Apps page; checking the set again adds them back
+    env["ir.module.module"].search([("name", "in", names), ("state", "in", ["uninstalled", "uninstallable"])]).unlink()
     env.cr.commit()
     PYEOF
+      fi
       psql -v ON_ERROR_STOP=1 -c "DELETE FROM diploi_parameters WHERE key = 'module_set:$set_name'"
     done
 
+    set_addons_path "$enabled_path"
     for entry in ${DIPLOI_MODULE_SETS:-}; do
       set_name=${entry%%=*}
       case "$mounted_sets" in *" $set_name "*) ;; *) continue ;; esac
@@ -211,7 +221,6 @@ data:
       fi
     done
 
-    set_addons_path "$enabled_path"
     log "Module sets: addons_path = $enabled_path"
 
     log "Odoo init complete"
