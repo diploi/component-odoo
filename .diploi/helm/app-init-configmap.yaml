@@ -185,9 +185,9 @@ data:
     import os
     names = os.environ["MODULES"].split(",")
     Module = env["ir.module.module"]
-    Module.search([("name", "in", names), ("state", "=", "to install")]).button_install_cancel()
-    Module.search([("name", "in", names), ("state", "=", "to upgrade")]).button_upgrade_cancel()
-    Module.search([("name", "in", names), ("state", "=", "to remove")]).button_uninstall_cancel()
+    # Cancel pending operations the way Odoo's button_reset_state does, for this set's modules only
+    Module.search([("name", "in", names), ("state", "=", "to install")]).state = "uninstalled"
+    Module.search([("name", "in", names), ("state", "in", ["to upgrade", "to remove"])]).state = "installed"
     installed = Module.search([("name", "in", names), ("state", "=", "installed")])
     if installed:
         print("Uninstalling", ", ".join(installed.mapped("name")))
